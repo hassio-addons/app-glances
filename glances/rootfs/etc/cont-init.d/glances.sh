@@ -6,6 +6,9 @@
 declare protocol
 bashio::require.unprotected
 
+# Ensure the add-on configuration directory exists
+mkdir -p /config
+
 # Migrate add-on data from the Home Assistant config directory,
 # to the add-on configuration directory.
 if ! bashio::fs.file_exists '/config/glances/glances.conf' \
@@ -55,12 +58,29 @@ if bashio::config.true 'influxdb.enabled'; then
             echo "bucket=$(bashio::config 'influxdb.bucket')"
             echo "token=$(bashio::config 'influxdb.token')"
         } >> /etc/glances.conf
+    else
+        bashio::exit.nok "Unsupported InfluxDB version: must be 1 or 2"
     fi
 
     {
         echo "protocol=${protocol}"
         echo "host=$(bashio::config 'influxdb.host')"
         echo "port=$(bashio::config 'influxdb.port')"
+    } >> /etc/glances.conf
+fi
+
+# Export Glances data to MQTT
+if bashio::config.true 'mqtt.enabled'; then
+    {
+        echo "[mqtt]"
+        echo "host=$(bashio::config 'mqtt.host')"
+        echo "port=$(bashio::config 'mqtt.port')"
+        echo "tls=$(bashio::config 'mqtt.tls')"
+        echo "user=$(bashio::config 'mqtt.username')"
+        echo "password=$(bashio::config 'mqtt.password')"
+        echo "topic=$(bashio::config 'mqtt.topic')"
+        echo "topic_structure=$(bashio::config 'mqtt.topic_structure')"
+        echo "callback_api_version=2"
     } >> /etc/glances.conf
 fi
 

@@ -17,6 +17,18 @@ if bashio::config.false 'process_info'; then
     options+=(--disable-process)
 fi
 
+if bashio::config.true 'influxdb.enabled'; then
+    if bashio::config.equals 'influxdb.version' '2'; then
+        options+=(--export influxdb2)
+    else
+        options+=(--export influxdb)
+    fi
+fi
+
+if bashio::config.true 'mqtt.enabled'; then
+    options+=(--export mqtt)
+fi
+
 if bashio::debug; then
     options+=(--debug)
 fi

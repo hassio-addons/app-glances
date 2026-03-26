@@ -12,5 +12,16 @@ on:
   workflow_dispatch:
 
 jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: glances/rootfs
+
   workflows:
     uses: hassio-addons/workflows/.github/workflows/addon-ci.yaml@main

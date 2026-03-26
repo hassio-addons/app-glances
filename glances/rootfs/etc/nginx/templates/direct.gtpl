@@ -13,6 +13,8 @@ server {
 
     ssl_certificate /ssl/{{ .certfile }};
     ssl_certificate_key /ssl/{{ .keyfile }};
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     {{ end }}
 
     {{ if not .leave_front_door_open }}
