@@ -1,10 +1,10 @@
 bottle==0.13.4
 docker==7.1.0
-glances==4.5.2
+glances==4.5.3
 influxdb==5.3.2
 influxdb-client==1.49.0
 paho-mqtt==2.1.0
 psutil==7.1.0
 py-cpuinfo==9.0.0
-requests==2.32.5
+requests==2.33.0
 zeroconf==0.148.0

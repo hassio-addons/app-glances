@@ -30,8 +30,8 @@ Glances is a cross-platform system monitoring tool written in Python.
 Glances is a cross-platform monitoring tool which aims to present a maximum of
 information in a minimum of space through a Web-based interface.
 
-Glances can export all system statistics to InfluxDB, allowing you to look
-at all your system information and its behavior over time.
+Glances can export all system statistics to InfluxDB and/or MQTT, allowing
+you to look at all your system information and its behavior over time.
 
 [:books: Read the full add-on documentation][docs]
 
@@ -101,7 +101,7 @@ SOFTWARE.
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 [armhf-shield]: https://img.shields.io/badge/armhf-no-red.svg
-[armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
+[armv7-shield]: https://img.shields.io/badge/armv7-no-red.svg
 [commits-shield]: https://img.shields.io/github/commit-activity/y/hassio-addons/addon-glances.svg
 [commits]: https://github.com/hassio-addons/addon-glances/commits/main
 [contributors]: https://github.com/hassio-addons/addon-glances/graphs/contributors

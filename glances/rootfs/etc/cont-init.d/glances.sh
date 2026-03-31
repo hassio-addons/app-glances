@@ -57,6 +57,7 @@ if bashio::config.true 'influxdb.enabled'; then
             echo "org=$(bashio::config 'influxdb.org')"
             echo "bucket=$(bashio::config 'influxdb.bucket')"
             echo "token=$(bashio::config 'influxdb.token')"
+            echo "interval=$(bashio::config 'influxdb.interval')"
         } >> /etc/glances.conf
     else
         bashio::exit.nok "Unsupported InfluxDB version: must be 1 or 2"

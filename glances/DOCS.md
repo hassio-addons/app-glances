@@ -22,6 +22,17 @@ comparison to installing any other Home Assistant add-on.
 1. Check the logs of the "Glances" to see if everything went well.
 1. Click the "OPEN WEB UI" button take a glance at Glances.
 
+## Security model
+
+This add-on needs elevated permissions to monitor host-level system metrics:
+
+- Protection mode must be disabled.
+- Host PID and host network access are enabled.
+- Docker API access is enabled.
+
+Treat this add-on as trusted infrastructure software and only install releases
+from maintainers you trust.
+
 ## Configuration
 
 **Note**: _Remember to restart the add-on when the configuration is changed._
@@ -39,7 +50,7 @@ influxdb:
   enabled: false
   host: a0d7b954-influxdb
   port: 8086
-  interval: 60
+  interval: 60 # Applied to version 2 only
   ssl: false
   prefix: localhost
   version: 1 # Either 1 or 2
@@ -114,6 +125,15 @@ The private key file to use for SSL.
 
 **Note**: _The file MUST be stored in `/ssl/`, which is the default_
 
+### Option: `leave_front_door_open`
+
+Controls authentication for direct access on port 80.
+
+- `false` (default): Require Home Assistant authentication for direct access.
+- `true`: Bypass authentication and expose Glances directly.
+
+**Warning**: _Set this to `true` only on trusted networks._
+
 ### Option group `influxdb`
 
 ---
@@ -138,7 +158,11 @@ The port on which InfluxDB is listening.
 
 #### Option `influxdb`: `interval`
 
-Defines the interval (in seconds) on how often Glances exports data to InfluxDB.
+> Applied to version 2 only
+
+Defines the flush interval (in seconds) for InfluxDB v2 exports.
+
+For InfluxDB v1, export cadence follows `refresh_time`.
 
 #### Option `influxdb`: `ssl`
 

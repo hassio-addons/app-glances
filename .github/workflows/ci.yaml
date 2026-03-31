@@ -24,4 +24,4 @@ jobs:
           scandir: glances/rootfs
 
   workflows:
-    uses: hassio-addons/workflows/.github/workflows/addon-ci.yaml@main
+    uses: hassio-addons/workflows/.github/workflows/addon-ci.yaml@3846ae0fd09acec8ac1ac308ceacd052b9d01bec
