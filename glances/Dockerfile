@@ -14,13 +14,13 @@ RUN \
     apk add --no-cache --virtual .build-dependencies \
         build-base=0.5-r3 \
         py3-pip=25.1.1-r0 \
-        python3-dev=3.12.12-r0 \
+        python3-dev=3.12.13-r0 \
     \
     && apk add --no-cache \
         nginx=1.28.0-r3 \
         py3-packaging=25.0-r0 \
         py3-six=1.17.0-r0 \
-        python3=3.12.12-r0 \
+        python3=3.12.13-r0 \
     \
     && pip3 install -r /tmp/requirements.txt \
     \
