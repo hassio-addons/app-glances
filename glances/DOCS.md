@@ -3,8 +3,8 @@
 Glances is a cross-platform monitoring tool which aims to present a maximum of
 information in a minimum of space through a Web-based interface.
 
-Glances can export all system statistics to InfluxDB, allowing you to look
-at all your system information and its behavior over time.
+Glances can export all system statistics to InfluxDB and/or MQTT, allowing
+you to look at all your system information and its behavior over time.
 
 ## Installation
 
@@ -21,6 +21,17 @@ comparison to installing any other Home Assistant add-on.
 1. Start the "Glances" add-on.
 1. Check the logs of the "Glances" to see if everything went well.
 1. Click the "OPEN WEB UI" button take a glance at Glances.
+
+## Security model
+
+This add-on needs elevated permissions to monitor host-level system metrics:
+
+- Protection mode must be disabled.
+- Host PID and host network access are enabled.
+- Docker API access is enabled.
+
+Treat this add-on as trusted infrastructure software and only install releases
+from maintainers you trust.
 
 ## Configuration
 
@@ -39,7 +50,7 @@ influxdb:
   enabled: false
   host: a0d7b954-influxdb
   port: 8086
-  interval: 60
+  interval: 60 # Applied to version 2 only
   ssl: false
   prefix: localhost
   version: 1 # Either 1 or 2
@@ -53,6 +64,15 @@ influxdb:
   token: "!secret glances_influxdb2_token"
   bucket: glances
   org: myorg
+mqtt:
+  enabled: false
+  host: core-mosquitto
+  port: 1883
+  tls: false
+  username: ""
+  password: ""
+  topic: glances
+  topic_structure: per-metric
 ```
 
 **Note**: _This is just an example, don't copy and paste it! Create your own!_
@@ -105,6 +125,15 @@ The private key file to use for SSL.
 
 **Note**: _The file MUST be stored in `/ssl/`, which is the default_
 
+### Option: `leave_front_door_open`
+
+Controls authentication for direct access on port 80.
+
+- `false` (default): Require Home Assistant authentication for direct access.
+- `true`: Bypass authentication and expose Glances directly.
+
+**Warning**: _Set this to `true` only on trusted networks._
+
 ### Option group `influxdb`
 
 ---
@@ -129,7 +158,11 @@ The port on which InfluxDB is listening.
 
 #### Option `influxdb`: `interval`
 
-Defines the interval (in seconds) on how often Glances exports data to InfluxDB.
+> Applied to version 2 only
+
+Defines the flush interval (in seconds) for InfluxDB v2 exports.
+
+For InfluxDB v1, export cadence follows `refresh_time`.
 
 #### Option `influxdb`: `ssl`
 
@@ -192,6 +225,52 @@ and not store this in the same bucket as Home Assistant._
 > Applied to version 2 only
 
 The InfluxDB organization that owns the given bucket.
+
+### Option group `mqtt`
+
+---
+
+The following options are for the option group: `mqtt`. These settings
+only apply to the Glances MQTT data export.
+
+#### Option `mqtt`: `enabled`
+
+Enables/Disables the Glances data export to MQTT.
+
+#### Option `mqtt`: `host`
+
+The hostname of the MQTT broker.
+
+**Note**: _If you are using the Mosquitto add-on,
+use `core-mosquitto` as the hostname._
+
+#### Option `mqtt`: `port`
+
+The port on which the MQTT broker is listening.
+
+#### Option `mqtt`: `tls`
+
+Enables/Disables TLS for the MQTT connection. If not set, defaults to
+`false`, which is the required setting for the Mosquitto add-on.
+
+#### Option `mqtt`: `username`
+
+The username to authenticate against the MQTT broker. Leave empty if
+your broker does not require authentication.
+
+#### Option `mqtt`: `password`
+
+The password for the above username option.
+
+#### Option `mqtt`: `topic`
+
+The root MQTT topic to publish Glances data to. Defaults to `glances`.
+
+#### Option `mqtt`: `topic_structure`
+
+Defines how Glances publishes data to MQTT topics. Either `per-metric`
+(one topic per metric, e.g., `glances/cpu/total`) or `per-plugin`
+(one topic per plugin with all metrics as JSON payload).
 
 ## Adding Glances as a sensor into Home Assistant
 
