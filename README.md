@@ -21,14 +21,12 @@ Glances is a cross-platform system monitoring tool written in Python.
 ## Why this fork exists
 
 The upstream [hassio-addons/addon-glances][upstream] add-on ships Glances 4.3.2
-with a first-boot crash (502 Bad Gateway), deprecated CI config, and no MQTT
-export. Upstream hasn't merged fixes for these issues.
+with a first-boot crash (502 Bad Gateway) and deprecated CI config.
+I forked it to get a working install, then added MQTT export since the
+plumbing was already there.
 
-This fork stays current, fixes real bugs, and adds MQTT export — so you can
-install it today and have a working Glances add-on.
-
-Fixes are submitted upstream where possible. Fork-only features (MQTT export)
-go beyond what upstream currently supports.
+Bug fixes have been submitted upstream as PRs. Fork-only features
+(MQTT export, security hardening) go beyond what upstream currently offers.
 
 ## What changed here
 
@@ -70,6 +68,17 @@ https://github.com/florianhorner/addon-glances-patched
 ```
 
 Then install "Glances" from the store and follow the [documentation][docs].
+
+## Switch back to upstream
+
+If your only need was the first-boot fix and it gets merged upstream:
+
+1. Remove this repository URL from your add-on store
+2. Re-add the original: `https://github.com/hassio-addons/addon-glances`
+3. Reinstall Glances from the store and restart
+
+MQTT export and security hardening are fork-only — switching back
+will remove those features.
 
 ## Support
 
@@ -137,7 +146,7 @@ SOFTWARE.
 [license-shield]: https://img.shields.io/github/license/florianhorner/addon-glances-patched.svg
 [maintainer]: https://github.com/florianhorner
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
-[project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
+[project-stage-shield]: https://img.shields.io/badge/project%20stage-production-green.svg
 [reddit]: https://reddit.com/r/homeassistant
 [releases-shield]: https://img.shields.io/github/release/florianhorner/addon-glances-patched.svg
 [releases]: https://github.com/florianhorner/addon-glances-patched/releases
