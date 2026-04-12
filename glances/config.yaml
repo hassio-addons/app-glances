@@ -2,8 +2,8 @@
 name: Glances
 version: "0.22.0-beta.1"
 slug: glances
-description: A cross-platform system monitoring tool
-url: https://github.com/hassio-addons/addon-glances
+description: "Personal fork — adds MQTT support, fixes 502 ingress, hardens security. Beta quality, not officially supported."
+url: https://github.com/florianhorner/addon-glances-patched
 ingress: true
 ingress_port: 0
 ingress_stream: true
