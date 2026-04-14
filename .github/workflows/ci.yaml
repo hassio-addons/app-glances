@@ -12,6 +12,26 @@ on:
   workflow_dispatch:
 
 jobs:
+  dockerfile-guard:
+    name: Dockerfile Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Reject exact apk package pins
+        run: |
+          bad_lines="$(awk '
+            /apk add --no-cache/ {in_apk=1}
+            in_apk && /^[[:space:]]+[a-z0-9][a-z0-9-]*=.*/ {print}
+            in_apk && /&&/ {in_apk=0}
+          ' glances/Dockerfile)"
+
+          if [ -n "${bad_lines}" ]; then
+            echo "Exact apk package pins make the add-on build brittle against base image refreshes."
+            echo "${bad_lines}"
+            exit 1
+          fi
+
   shellcheck:
     name: ShellCheck
     runs-on: ubuntu-latest

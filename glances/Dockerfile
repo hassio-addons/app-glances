@@ -11,16 +11,22 @@ COPY requirements.txt /tmp/
 # Setup base
 # hadolint ignore=DL3042
 RUN \
-    apk add --no-cache --virtual .build-dependencies \
-        build-base=0.5-r3 \
-        py3-pip=25.1.1-r0 \
-        python3-dev=3.12.12-r0 \
+    # The Home Assistant base image carries version-pinned entries in
+    # /etc/apk/world. Strip those pins first so Alpine repository updates do
+    # not make new package installs unsatisfiable.
+    sed -E -i 's/=.*$//' /etc/apk/world \
+    && apk upgrade --no-cache \
+    \
+    && apk add --no-cache --virtual .build-dependencies \
+        build-base \
+        py3-pip \
+        python3-dev \
     \
     && apk add --no-cache \
-        nginx=1.28.0-r3 \
-        py3-packaging=25.0-r0 \
-        py3-six=1.17.0-r0 \
-        python3=3.12.12-r0 \
+        nginx \
+        py3-packaging \
+        py3-six \
+        python3 \
     \
     && pip3 install -r /tmp/requirements.txt \
     \

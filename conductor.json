@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "setup": "bash scripts/conductor-setup-macos.sh"
+  }
+}
