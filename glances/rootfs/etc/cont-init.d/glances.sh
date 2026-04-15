@@ -6,6 +6,9 @@
 declare protocol
 bashio::require.unprotected
 
+# Ensure the add-on configuration directory exists
+mkdir -p /config
+
 # Migrate add-on data from the Home Assistant config directory,
 # to the add-on configuration directory.
 if ! bashio::fs.file_exists '/config/glances/glances.conf' \
