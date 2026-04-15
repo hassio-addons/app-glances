@@ -3,8 +3,7 @@ name: Glances
 version: dev
 slug: glances
 description: A cross-platform system monitoring tool
-url: https://github.com/hassio-addons/addon-glances
-codenotary: codenotary@frenck.dev
+url: https://github.com/hassio-addons/app-glances
 ingress: true
 ingress_port: 0
 ingress_stream: true
