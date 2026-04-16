@@ -71,5 +71,3 @@ if bashio::config.true 'influxdb.enabled'; then
         echo "port=$(bashio::config 'influxdb.port')"
     } >> /etc/glances.conf
 fi
-
-ln -sf /dev/stdout /tmp/glances-root.log
