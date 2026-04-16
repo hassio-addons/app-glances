@@ -1,16 +1,17 @@
 #!/usr/bin/env bashio
+# shellcheck shell=bash
 # ==============================================================================
-# Home Assistant Community Add-on: Glances
+# Home Assistant Community App: Glances
 # Configures Glances
 # ==============================================================================
 declare protocol
 bashio::require.unprotected
 
-# Ensure the add-on configuration directory exists
+# Ensure the app configuration directory exists
 mkdir -p /config
 
-# Migrate add-on data from the Home Assistant config directory,
-# to the add-on configuration directory.
+# Migrate app data from the Home Assistant config directory,
+# to the app configuration directory.
 if ! bashio::fs.file_exists '/config/glances/glances.conf' \
     && bashio::fs.file_exists '/homeassistant/glances/glances.conf'; then
     mv /homeassistant/glances /config/ \
@@ -47,6 +48,7 @@ if bashio::config.true 'influxdb.enabled'; then
             echo "password=$(bashio::config 'influxdb.password')"
             echo "db=$(bashio::config 'influxdb.database')"
             echo "prefix=$(bashio::config 'influxdb.prefix')"
+            echo "interval=$(bashio::config 'influxdb.interval')"
         } >> /etc/glances.conf
     elif bashio::config.equals 'influxdb.version' '2'; then
         bashio::config.require "influxdb.org"
@@ -57,7 +59,10 @@ if bashio::config.true 'influxdb.enabled'; then
             echo "org=$(bashio::config 'influxdb.org')"
             echo "bucket=$(bashio::config 'influxdb.bucket')"
             echo "token=$(bashio::config 'influxdb.token')"
+            echo "interval=$(bashio::config 'influxdb.interval')"
         } >> /etc/glances.conf
+    else
+        bashio::exit.nok "Unsupported InfluxDB version: must be 1 or 2"
     fi
 
     {

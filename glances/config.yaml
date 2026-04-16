@@ -9,7 +9,6 @@ ingress_port: 0
 ingress_stream: true
 panel_icon: mdi:speedometer
 startup: services
-homeassistant: 0.92.0b2
 arch:
   - aarch64
   - amd64
@@ -49,6 +48,7 @@ options:
     password: ""
     database: glances
     prefix: localhost
+  leave_front_door_open: false
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   process_info: bool
