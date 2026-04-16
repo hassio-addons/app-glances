@@ -4,8 +4,8 @@
 # Home Assistant Community App: Glances
 # Runs Glances
 # ==============================================================================
-declare -a options
-declare -a exporters
+declare -a options=()
+declare -a exporters=()
 
 bashio::log.info 'Starting Glances...'
 
