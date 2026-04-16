@@ -1,6 +1,7 @@
 #!/usr/bin/env bashio
+# shellcheck shell=bash
 # ==============================================================================
-# Home Assistant Community Add-on: Glances
+# Home Assistant Community App: Glances
 # Configures NGINX for use with Glances
 # ==============================================================================
 
