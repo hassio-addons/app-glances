@@ -31,11 +31,16 @@ fi
 # Run a separate lightweight instance in quiet/standalone mode for exports.
 if (( ${#exporters[@]} > 0 )); then
     bashio::log.info 'Starting Glances exporter...'
-    glances \
-        -C /etc/glances.conf \
-        --quiet \
-        --time "$(bashio::config 'refresh_time')" \
-        --export "$(IFS=,; echo "${exporters[*]}")" &
+    declare -a exporter_options=(
+        -C /etc/glances.conf
+        --quiet
+        --time "$(bashio::config 'refresh_time')"
+        --export "$(IFS=,; echo "${exporters[*]}")"
+    )
+    if bashio::config.false 'process_info'; then
+        exporter_options+=(--disable-process)
+    fi
+    glances "${exporter_options[@]}" &
     EXPORTER_PID=$!
     bashio::log.info "Glances exporter started (PID: ${EXPORTER_PID})"
 fi
