@@ -70,7 +70,7 @@ schema:
     prefix: str?
     interval: int
     ssl: bool?
-    token: str?
+    token: password?
     version: int
   leave_front_door_open: bool?
 environment:
