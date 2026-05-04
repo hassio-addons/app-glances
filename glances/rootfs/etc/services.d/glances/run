@@ -58,8 +58,14 @@ if [[ -n "${EXPORTER_PID:-}" ]]; then
     WEBSERVER_PID=$!
     bashio::log.info "Glances web server started (PID: ${WEBSERVER_PID})"
 
-    trap 'kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null' TERM INT
+    SHUTTING_DOWN=0
+    trap 'SHUTTING_DOWN=1; kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null' TERM INT
     wait -n
+    if (( SHUTTING_DOWN )); then
+        bashio::log.info "Glances stopped"
+        wait
+        exit 0
+    fi
     bashio::log.fatal "A Glances process exited unexpectedly, stopping container..."
     kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null
     exit 1
