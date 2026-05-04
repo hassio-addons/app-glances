@@ -4,6 +4,8 @@ version: dev
 slug: glances
 description: A cross-platform system monitoring tool
 url: https://github.com/hassio-addons/app-glances
+watchdog: http://[HOST]:61209
+init: false
 ingress: true
 ingress_port: 0
 ingress_stream: true
@@ -23,7 +25,7 @@ map:
   - share
   - ssl
   - media
-  - homeassistant_config:rw
+  - homeassistant_config
 hassio_api: true
 auth_api: true
 docker_api: true
@@ -68,7 +70,7 @@ schema:
     prefix: str?
     interval: int
     ssl: bool?
-    token: str?
+    token: password?
     version: int
   leave_front_door_open: bool?
 environment:

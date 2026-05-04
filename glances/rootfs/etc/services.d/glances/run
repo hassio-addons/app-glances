@@ -27,13 +27,55 @@ if bashio::config.true 'influxdb.enabled'; then
     fi
 fi
 
+# Glances v4 does not support --export in webserver mode (-w).
+# Run a separate lightweight instance in quiet/standalone mode for exports.
 if (( ${#exporters[@]} > 0 )); then
-    options+=(--export "$(IFS=,; echo "${exporters[*]}")")
+    bashio::log.info 'Starting Glances exporter...'
+    declare -a exporter_options=(
+        -C /etc/glances.conf
+        --quiet
+        --time "$(bashio::config 'refresh_time')"
+        --export "$(IFS=,; echo "${exporters[*]}")"
+    )
+    if bashio::config.false 'process_info'; then
+        exporter_options+=(--disable-process)
+    fi
+    glances "${exporter_options[@]}" &
+    EXPORTER_PID=$!
+    bashio::log.info "Glances exporter started (PID: ${EXPORTER_PID})"
 fi
 
 if bashio::debug; then
     options+=(--debug)
 fi
 
-# Run Glances
-exec glances "${options[@]}"
+# When an exporter is running, both processes run in the background so we can
+# detect if either one crashes (wait -n exits on the first child to terminate).
+# SIGTERM from HA (addon stop) is forwarded to both children for clean shutdown.
+# Without an exporter, the simple exec path is used.
+if [[ -n "${EXPORTER_PID:-}" ]]; then
+    glances "${options[@]}" &
+    WEBSERVER_PID=$!
+    bashio::log.info "Glances web server started (PID: ${WEBSERVER_PID})"
+
+    shutdown() {
+        bashio::log.info "Stopping Glances..."
+        bashio::log.debug "Sending SIGTERM to web server (PID: ${WEBSERVER_PID})..."
+        kill "${WEBSERVER_PID}" 2>/dev/null
+        bashio::log.debug "Sending SIGTERM to exporter (PID: ${EXPORTER_PID})..."
+        kill "${EXPORTER_PID}" 2>/dev/null
+        wait "${WEBSERVER_PID}" 2>/dev/null
+        bashio::log.info "- Web server stopped"
+        wait "${EXPORTER_PID}" 2>/dev/null
+        bashio::log.info "- Exporter stopped"
+        bashio::log.info "Glances stopped"
+        exit 0
+    }
+    trap shutdown TERM INT
+    wait -n
+    bashio::log.fatal "A Glances process exited unexpectedly, stopping container..."
+    kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null
+    exit 1
+else
+    exec glances "${options[@]}"
+fi

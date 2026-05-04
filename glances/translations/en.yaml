@@ -1,0 +1,65 @@
+---
+configuration:
+  log_level:
+    name: Log level
+    description: The log level for the app.
+  process_info:
+    name: Process info
+    description: Enable or disable process information.
+  refresh_time:
+    name: Refresh time
+    description: Time in seconds between each refresh of the system data.
+  ssl:
+    name: SSL
+    description: Enable SSL for direct access (not needed for Ingress).
+  certfile:
+    name: Certificate file
+    description: The certificate file to use for SSL.
+  keyfile:
+    name: Key file
+    description: The private key file to use for SSL.
+  influxdb:
+    name: InfluxDB
+    description: InfluxDB export configuration.
+    bucket:
+      name: Bucket
+      description: InfluxDB v2 bucket name.
+    enabled:
+      name: Enabled
+      description: Enable or disable InfluxDB export.
+    host:
+      name: Host
+      description: The hostname of the InfluxDB server.
+    port:
+      name: Port
+      description: The port of the InfluxDB server.
+    username:
+      name: Username
+      description: InfluxDB v1 username.
+    password:
+      name: Password
+      description: InfluxDB v1 password.
+    database:
+      name: Database
+      description: InfluxDB v1 database name.
+    org:
+      name: Organization
+      description: InfluxDB v2 organization.
+    prefix:
+      name: Prefix
+      description: Prefix for measurements in InfluxDB.
+    interval:
+      name: Interval
+      description: Time in seconds between each export to InfluxDB.
+    ssl:
+      name: SSL
+      description: Use SSL to connect to InfluxDB.
+    token:
+      name: Token
+      description: InfluxDB v2 authentication token.
+    version:
+      name: Version
+      description: "InfluxDB version (1 or 2)."
+  leave_front_door_open:
+    name: Leave front door open
+    description: Disable authentication (not recommended).
