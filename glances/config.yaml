@@ -24,7 +24,7 @@ map:
   - share
   - ssl
   - media
-  - homeassistant_config:rw
+  - homeassistant_config
 hassio_api: true
 auth_api: true
 docker_api: true
