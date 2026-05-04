@@ -49,5 +49,20 @@ if bashio::debug; then
     options+=(--debug)
 fi
 
-# Run Glances
-exec glances "${options[@]}"
+# When an exporter is running, both processes run in the background so we can
+# detect if either one crashes (wait -n exits on the first child to terminate).
+# SIGTERM from HA (addon stop) is forwarded to both children for clean shutdown.
+# Without an exporter, the simple exec path is used.
+if [[ -n "${EXPORTER_PID:-}" ]]; then
+    glances "${options[@]}" &
+    WEBSERVER_PID=$!
+    bashio::log.info "Glances web server started (PID: ${WEBSERVER_PID})"
+
+    trap 'kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null' TERM INT
+    wait -n
+    bashio::log.fatal "A Glances process exited unexpectedly, stopping container..."
+    kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null
+    exit 1
+else
+    exec glances "${options[@]}"
+fi
