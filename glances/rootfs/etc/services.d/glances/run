@@ -58,14 +58,21 @@ if [[ -n "${EXPORTER_PID:-}" ]]; then
     WEBSERVER_PID=$!
     bashio::log.info "Glances web server started (PID: ${WEBSERVER_PID})"
 
-    SHUTTING_DOWN=0
-    trap 'SHUTTING_DOWN=1; kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null' TERM INT
-    wait -n
-    if (( SHUTTING_DOWN )); then
+    shutdown() {
+        bashio::log.info "Stopping Glances..."
+        bashio::log.debug "Sending SIGTERM to web server (PID: ${WEBSERVER_PID})..."
+        kill "${WEBSERVER_PID}" 2>/dev/null
+        bashio::log.debug "Sending SIGTERM to exporter (PID: ${EXPORTER_PID})..."
+        kill "${EXPORTER_PID}" 2>/dev/null
+        wait "${WEBSERVER_PID}" 2>/dev/null
+        bashio::log.info "- Web server stopped"
+        wait "${EXPORTER_PID}" 2>/dev/null
+        bashio::log.info "- Exporter stopped"
         bashio::log.info "Glances stopped"
-        wait
         exit 0
-    fi
+    }
+    trap shutdown TERM INT
+    wait -n
     bashio::log.fatal "A Glances process exited unexpectedly, stopping container..."
     kill "${WEBSERVER_PID}" "${EXPORTER_PID}" 2>/dev/null
     exit 1
