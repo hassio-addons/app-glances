@@ -27,8 +27,17 @@ if bashio::config.true 'influxdb.enabled'; then
     fi
 fi
 
+# Glances v4 does not support --export in webserver mode (-w).
+# Run a separate lightweight instance in quiet/standalone mode for exports.
 if (( ${#exporters[@]} > 0 )); then
-    options+=(--export "$(IFS=,; echo "${exporters[*]}")")
+    bashio::log.info 'Starting Glances exporter...'
+    glances \
+        -C /etc/glances.conf \
+        --quiet \
+        --time "$(bashio::config 'refresh_time')" \
+        --export "$(IFS=,; echo "${exporters[*]}")" &
+    EXPORTER_PID=$!
+    bashio::log.info "Glances exporter started (PID: ${EXPORTER_PID})"
 fi
 
 if bashio::debug; then
