@@ -2,7 +2,7 @@
 configuration:
   log_level:
     name: Log level
-    description: The log level for the addon.
+    description: The log level for the app.
   process_info:
     name: Process info
     description: Enable or disable process information.
