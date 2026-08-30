@@ -8,4 +8,4 @@ psutil==7.2.2
 py-cpuinfo==9.0.0
 requests==2.34.2
 uvicorn==0.52.4
-zeroconf==0.151.2
+zeroconf==0.151.3
