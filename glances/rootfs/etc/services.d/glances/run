@@ -54,67 +54,139 @@ if bashio::debug; then
     exporter_options+=(--debug)
 fi
 
-# Ask the given processes to stop, giving them room to shut down gracefully
-# before resorting to SIGKILL, and wait for all of them to be gone.
-terminate_processes() {
-    local timeout=$1
-    local elapsed=0
+# Print those of the given PIDs that are still running children of this shell,
+# or all of them when no PID is given. This app runs in the host PID namespace,
+# so a PID that has exited can belong to an unrelated process by the time it is
+# signalled. Unlike kill -0, the job table of the shell never lists a process
+# that is not our own child, and drops a child once it has been reaped. That
+# narrows the window between checking a PID and signalling it to almost
+# nothing, but it cannot close it entirely: that would require pidfd, which is
+# not available from bash.
+running_children() {
+    local -a running
+    local pid job
+
+    read -r -a running <<< "$(jobs -pr | tr '\n' ' ')"
+    if (( $# == 0 )); then
+        echo -n "${running[*]}"
+        return
+    fi
+
+    for pid in "$@"; do
+        for job in "${running[@]}"; do
+            if [[ "${job}" == "${pid}" ]]; then
+                echo -n "${pid} "
+                break
+            fi
+        done
+    done
+}
+
+# Send the given signal to each of the given PIDs, checking right before every
+# single signal that the PID is still a running child.
+signal_children() {
+    local signal=$1
     local pid
     shift
 
-    kill "$@" 2>/dev/null || true
-
     for pid in "$@"; do
-        while kill -0 "${pid}" 2>/dev/null; do
-            if (( elapsed >= timeout )); then
-                bashio::log.warning \
-                    "Glances did not stop within ${timeout}s, sending SIGKILL..."
-                kill -9 "$@" 2>/dev/null || true
-                break 2
-            fi
+        if bashio::var.has_value "$(running_children "${pid}")"; then
+            kill "-${signal}" "${pid}" 2>/dev/null || true
+        fi
+    done
+}
+
+# Ask the given processes to stop, giving them room to shut down gracefully
+# before resorting to SIGKILL. Exited processes are reaped, but a process that
+# does not go away even after SIGKILL is never waited for, so this always
+# returns within the timeout plus a few seconds.
+terminate_processes() {
+    local timeout=$1
+    local deadline=$(( SECONDS + timeout ))
+    local -a pending
+    local pid
+    shift
+
+    signal_children TERM "$@"
+    read -r -a pending <<< "$(running_children "$@")"
+    while (( ${#pending[@]} > 0 && SECONDS < deadline )); do
+        sleep 1
+        read -r -a pending <<< "$(running_children "${pending[@]}")"
+    done
+
+    if (( ${#pending[@]} > 0 )); then
+        bashio::log.warning \
+            "Glances did not stop within ${timeout}s, sending SIGKILL..."
+        signal_children KILL "${pending[@]}"
+        deadline=$(( SECONDS + 5 ))
+        while (( ${#pending[@]} > 0 && SECONDS < deadline )); do
             sleep 1
-            elapsed=$(( elapsed + 1 ))
+            read -r -a pending <<< "$(running_children "${pending[@]}")"
         done
-    done
+    fi
 
     for pid in "$@"; do
-        wait "${pid}" 2>/dev/null || true
+        if ! bashio::var.has_value "$(running_children "${pid}")"; then
+            wait "${pid}" 2>/dev/null || true
+        fi
     done
+
+    if (( ${#pending[@]} > 0 )); then
+        bashio::log.error "Glances processes still running: ${pending[*]}"
+    fi
+}
+
+# Stop whatever the exporter supervisor is running, the exporter or the pause
+# before restarting it, and wait for it to be gone before giving up supervision.
+# The children are taken from the job table rather than from a variable, so a
+# stop request that arrives right after a start still finds the exporter.
+# shellcheck disable=SC2329  # Invoked indirectly, via trap
+stop_exporter() {
+    local -a children
+    trap '' TERM INT
+
+    # Stay below the timeout of stop_glances, so the exporter is killed from
+    # here, rather than this supervisor being killed and the exporter orphaned.
+    read -r -a children <<< "$(running_children)"
+    terminate_processes 20 "${children[@]}"
+
+    exit 0
 }
 
 # The exporter quits when its target is unreachable, for example when InfluxDB
 # is down or has not started up yet. Restart it instead of tearing down the
 # app, so the web interface stays available regardless of the exporter state.
-exporter_child_pid=''
-
-# Stop the exporter currently being supervised, if any, and wait for it to
-# actually be gone before giving up supervision. This app runs in the host PID
-# namespace, so only ever signal a PID that is known to still be our child.
-# shellcheck disable=SC2329  # Invoked indirectly, via trap
-stop_exporter() {
-    trap '' TERM INT
-
-    # Stay below the timeout of stop_glances, so the exporter is killed from
-    # here, rather than this supervisor being killed and the exporter orphaned.
-    if bashio::var.has_value "${exporter_child_pid}"; then
-        terminate_processes 20 "${exporter_child_pid}"
-    fi
-
-    exit 0
-}
-
+# Both the exporter and the pause run in the background and are waited for, so
+# a stop request interrupts the wait instead of being held until they finish.
 exporter_supervisor() {
     trap stop_exporter TERM INT
 
     while true; do
         glances "${exporter_options[@]}" &
-        exporter_child_pid=$!
-        wait "${exporter_child_pid}" || true
-        exporter_child_pid=''
+        wait "$!" || true
         bashio::log.warning 'Glances exporter exited, restarting...'
-        sleep 10
+        sleep 10 &
+        wait "$!" || true
     done
 }
+
+# Forward a stop request to everything that is running, giving it room to shut
+# down gracefully before resorting to SIGKILL. The trap is set before anything
+# is started, so there is no window in which a stop request leaves children
+# behind.
+# shellcheck disable=SC2329  # Invoked indirectly, via trap
+stop_glances() {
+    local -a children
+    trap '' TERM INT
+
+    bashio::log.info 'Stopping Glances...'
+    read -r -a children <<< "$(running_children)"
+    terminate_processes 30 "${children[@]}"
+
+    bashio::log.info 'Glances stopped'
+    exit 0
+}
+trap stop_glances TERM INT
 
 bashio::log.info 'Starting Glances exporter...'
 exporter_supervisor &
@@ -123,34 +195,15 @@ readonly EXPORTER_PID=$!
 glances "${options[@]}" &
 readonly WEBSERVER_PID=$!
 
-# Forward a stop request to both processes, giving them room to shut down
-# gracefully before resorting to SIGKILL.
-# shellcheck disable=SC2329  # Invoked indirectly, via trap
-stop_glances() {
-    trap '' TERM INT
-
-    bashio::log.info 'Stopping Glances...'
-    terminate_processes 30 "${EXPORTER_PID}" "${WEBSERVER_PID}"
-
-    bashio::log.info 'Glances stopped'
-    exit 0
-}
-trap stop_glances TERM INT
-
 # Getting here means either the web server or the exporter supervisor is gone.
 # Stop whatever is left and wait for it to be gone before letting the app be
-# restarted. The PID that already exited has been reaped, and could belong to
-# another process in the host PID namespace by now, so it is not signalled.
-exited_pid=''
-wait -n -p exited_pid || true
+# restarted. The IDs are passed explicitly, so a child that exited before this
+# point is still picked up instead of waiting on the other one indefinitely.
+wait -n "${EXPORTER_PID}" "${WEBSERVER_PID}" || true
 trap '' TERM INT
 bashio::log.warning 'Glances exited unexpectedly, stopping...'
 
-declare -a remaining_pids=()
-for pid in "${EXPORTER_PID}" "${WEBSERVER_PID}"; do
-    if [[ "${pid}" != "${exited_pid}" ]]; then
-        remaining_pids+=("${pid}")
-    fi
-done
-terminate_processes 30 "${remaining_pids[@]}"
+declare -a remaining=()
+read -r -a remaining <<< "$(running_children)"
+terminate_processes 30 "${remaining[@]}"
 exit 1
