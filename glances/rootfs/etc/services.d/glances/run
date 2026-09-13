@@ -54,6 +54,34 @@ if bashio::debug; then
     exporter_options+=(--debug)
 fi
 
+# Ask the given processes to stop, giving them room to shut down gracefully
+# before resorting to SIGKILL, and wait for all of them to be gone.
+terminate_processes() {
+    local timeout=$1
+    local elapsed=0
+    local pid
+    shift
+
+    kill "$@" 2>/dev/null || true
+
+    for pid in "$@"; do
+        while kill -0 "${pid}" 2>/dev/null; do
+            if (( elapsed >= timeout )); then
+                bashio::log.warning \
+                    "Glances did not stop within ${timeout}s, sending SIGKILL..."
+                kill -9 "$@" 2>/dev/null || true
+                break 2
+            fi
+            sleep 1
+            elapsed=$(( elapsed + 1 ))
+        done
+    done
+
+    for pid in "$@"; do
+        wait "${pid}" 2>/dev/null || true
+    done
+}
+
 # The exporter quits when its target is unreachable, for example when InfluxDB
 # is down or has not started up yet. Restart it instead of tearing down the
 # app, so the web interface stays available regardless of the exporter state.
@@ -66,9 +94,10 @@ exporter_child_pid=''
 stop_exporter() {
     trap '' TERM INT
 
+    # Stay below the timeout of stop_glances, so the exporter is killed from
+    # here, rather than this supervisor being killed and the exporter orphaned.
     if bashio::var.has_value "${exporter_child_pid}"; then
-        kill "${exporter_child_pid}" 2>/dev/null || true
-        wait "${exporter_child_pid}" 2>/dev/null || true
+        terminate_processes 20 "${exporter_child_pid}"
     fi
 
     exit 0
@@ -98,37 +127,30 @@ readonly WEBSERVER_PID=$!
 # gracefully before resorting to SIGKILL.
 # shellcheck disable=SC2329  # Invoked indirectly, via trap
 stop_glances() {
-    local timeout=30
-    local elapsed=0
-
     trap '' TERM INT
 
     bashio::log.info 'Stopping Glances...'
-    kill "${EXPORTER_PID}" "${WEBSERVER_PID}" 2>/dev/null || true
-
-    while kill -0 "${EXPORTER_PID}" 2>/dev/null \
-        || kill -0 "${WEBSERVER_PID}" 2>/dev/null; do
-        if (( elapsed >= timeout )); then
-            bashio::log.warning \
-                "Glances did not stop within ${timeout}s, sending SIGKILL..."
-            kill -9 "${EXPORTER_PID}" "${WEBSERVER_PID}" 2>/dev/null || true
-            break
-        fi
-        sleep 1
-        elapsed=$(( elapsed + 1 ))
-    done
-
-    wait "${EXPORTER_PID}" 2>/dev/null || true
-    wait "${WEBSERVER_PID}" 2>/dev/null || true
+    terminate_processes 30 "${EXPORTER_PID}" "${WEBSERVER_PID}"
 
     bashio::log.info 'Glances stopped'
     exit 0
 }
 trap stop_glances TERM INT
 
-# The exporter supervises itself, so getting here means the web server is gone.
-# Stop the exporter as well and let the app be restarted.
-wait -n || true
+# Getting here means either the web server or the exporter supervisor is gone.
+# Stop whatever is left and wait for it to be gone before letting the app be
+# restarted. The PID that already exited has been reaped, and could belong to
+# another process in the host PID namespace by now, so it is not signalled.
+exited_pid=''
+wait -n -p exited_pid || true
+trap '' TERM INT
 bashio::log.warning 'Glances exited unexpectedly, stopping...'
-kill "${EXPORTER_PID}" 2>/dev/null || true
+
+declare -a remaining_pids=()
+for pid in "${EXPORTER_PID}" "${WEBSERVER_PID}"; do
+    if [[ "${pid}" != "${exited_pid}" ]]; then
+        remaining_pids+=("${pid}")
+    fi
+done
+terminate_processes 30 "${remaining_pids[@]}"
 exit 1
