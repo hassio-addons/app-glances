@@ -58,10 +58,11 @@ fi
 # or all of them when no PID is given. This app runs in the host PID namespace,
 # so a PID that has exited can belong to an unrelated process by the time it is
 # signalled. Unlike kill -0, the job table of the shell never lists a process
-# that is not our own child, and drops a child once it has been reaped. That
-# narrows the window between checking a PID and signalling it to almost
-# nothing, but it cannot close it entirely: that would require pidfd, which is
-# not available from bash.
+# that is not our own child, and filtering it on running jobs leaves out a
+# child that has exited, even while its entry is still kept. That narrows the
+# window between checking a PID and signalling it to almost nothing, but it
+# cannot close it entirely: that would require pidfd, which is not available
+# from bash.
 running_children() {
     local -a running
     local pid job
@@ -130,6 +131,12 @@ terminate_processes() {
             wait "${pid}" 2>/dev/null || true
         fi
     done
+
+    # A process may have exited since the last poll, so check again before
+    # reporting it as still running.
+    if (( ${#pending[@]} > 0 )); then
+        read -r -a pending <<< "$(running_children "${pending[@]}")"
+    fi
 
     if (( ${#pending[@]} > 0 )); then
         bashio::log.error "Glances processes still running: ${pending[*]}"
