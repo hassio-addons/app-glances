@@ -100,13 +100,18 @@ signal_children() {
 # Ask the given processes to stop, giving them room to shut down gracefully
 # before resorting to SIGKILL. Exited processes are reaped, but a process that
 # does not go away even after SIGKILL is never waited for, so this always
-# returns within the timeout plus a few seconds.
+# returns within the timeout plus a few seconds. Without any PID given there
+# is nothing to do; running_children would otherwise report every child.
 terminate_processes() {
     local timeout=$1
     local deadline=$(( SECONDS + timeout ))
     local -a pending
     local pid
     shift
+
+    if (( $# == 0 )); then
+        return
+    fi
 
     signal_children TERM "$@"
     read -r -a pending <<< "$(running_children "$@")"
@@ -117,7 +122,7 @@ terminate_processes() {
 
     if (( ${#pending[@]} > 0 )); then
         bashio::log.warning \
-            "Glances did not stop within ${timeout}s, sending SIGKILL..."
+            "Glances process did not stop within ${timeout}s, sending SIGKILL..."
         signal_children KILL "${pending[@]}"
         deadline=$(( SECONDS + 5 ))
         while (( ${#pending[@]} > 0 && SECONDS < deadline )); do
@@ -210,7 +215,6 @@ wait -n "${EXPORTER_PID}" "${WEBSERVER_PID}" || true
 trap '' TERM INT
 bashio::log.warning 'Glances exited unexpectedly, stopping...'
 
-declare -a remaining=()
 read -r -a remaining <<< "$(running_children)"
 terminate_processes 30 "${remaining[@]}"
 exit 1
