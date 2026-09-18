@@ -63,6 +63,12 @@
       "matchDatasources": ["repology"],
       "automerge": true,
       "matchPackageNames": ["/^alpine_.*/python3(-dev)?$/"]
+    },
+    {
+      "description": "Glances 4.5.6 breaks with influxdb3-python 0.17.0+, see requirements.txt",
+      "matchManagers": ["pip_requirements"],
+      "matchPackageNames": ["influxdb3-python"],
+      "allowedVersions": "<0.17.0"
     }
   ]
 }

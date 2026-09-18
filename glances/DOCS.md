@@ -42,7 +42,7 @@ influxdb:
   interval: 60
   ssl: false
   prefix: localhost
-  version: 1 # Either 1 or 2
+  version: 1 # Either 1, 2 or 3
 
   # Version 1
   username: glances
@@ -53,6 +53,10 @@ influxdb:
   token: "!secret glances_influxdb2_token"
   bucket: glances
   org: myorg
+
+  # Version 3
+  token: "!secret glances_influxdb3_token"
+  database: glances
 ```
 
 **Note**: _This is just an example, don't copy and paste it! Create your own!_
@@ -145,7 +149,7 @@ The hostname to append for exported data.
 
 #### Option `influxdb`: `version`
 
-The InfluxDB version to connect to. Either **1** or **2**.
+The InfluxDB version to connect to. Either **1**, **2** or **3**.
 
 #### Option `influxdb`: `username`
 
@@ -162,7 +166,7 @@ The password for the above username option.
 
 #### Option `influxdb`: `database`
 
-> Applied to version 1 only
+> Applied to versions 1 and 3 only
 
 The name of the database to store all Glances information into.
 
@@ -173,9 +177,10 @@ and not store this in the same database name as Home Assistant._
 
 #### Option `influxdb`: `token`
 
-> Applied to version 2 only
+> Applied to versions 2 and 3 only
 
-An InfluxDB token with permissions to write to the given bucket. This should
+An InfluxDB token with permissions to write to the given bucket (version 2)
+or database (version 3). This should
 look like `t9iHPiGQyg0ds4K1IlBrCyBsNGh71dkdR6u8Y9eeR37UzfGuFukFCdbMI4YA9EtKb4zr5coFXKw67tbBEP7CPw==`
 
 #### Option `influxdb`: `bucket`
@@ -189,9 +194,11 @@ and not store this in the same bucket as Home Assistant._
 
 #### Option `influxdb`: `org`
 
-> Applied to version 2 only
+> Applied to versions 2 and 3 only
 
-The InfluxDB organization that owns the given bucket.
+The InfluxDB organization that owns the given bucket. Required for version 2.
+InfluxDB 3 does not use organizations, so for version 3 this option is
+optional and defaults to `default`.
 
 ## Glances configuration file
 
