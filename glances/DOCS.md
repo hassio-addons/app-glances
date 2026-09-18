@@ -193,6 +193,33 @@ and not store this in the same bucket as Home Assistant._
 
 The InfluxDB organization that owns the given bucket.
 
+## Glances configuration file
+
+On first start, the app copies its Glances configuration template to
+`/addon_configs/a0d7b954_glances/glances/glances.conf`. This file is yours:
+it is never overwritten by the app, so any change you make to it is kept
+across updates. It also means changes to the template in newer versions of
+the app do not reach an existing installation. Delete the file and restart
+the app to get a fresh copy of the current template.
+
+### Slow startup with network storage
+
+The `[folders]` section of the configuration file lists folders of which
+Glances tracks the size. Glances computes that size by walking every file in
+the folder, from its main stats loop. When a monitored folder contains a
+large or stale network share (SMB/NFS mounted through
+**Settings -> System -> Storage**), Glances blocks for minutes on every
+refresh: the app is slow to start, the web interface takes minutes to load
+and its values stop updating.
+
+Network storage of the "share" and "media" types is mounted under `/share`
+and `/media`, respectively. Earlier versions of the app listed both
+in the `[folders]` section of the template. If your installation was made
+with one of those versions and you use network storage, remove the
+`folder_x_*` entries for `/share` and `/media` from
+`/addon_configs/a0d7b954_glances/glances/glances.conf` and restart the app,
+or delete the file to get the current template.
+
 ## Adding Glances as a sensor into Home Assistant
 
 The Home Assistant Glances sensor platform is consuming the system information
