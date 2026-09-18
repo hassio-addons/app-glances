@@ -20,7 +20,9 @@ if bashio::config.false 'process_info'; then
 fi
 
 if bashio::config.true 'influxdb.enabled'; then
-    if bashio::config.equals 'influxdb.version' '2'; then
+    if bashio::config.equals 'influxdb.version' '3'; then
+        exporters+=(influxdb3)
+    elif bashio::config.equals 'influxdb.version' '2'; then
         exporters+=(influxdb2)
     else
         exporters+=(influxdb)

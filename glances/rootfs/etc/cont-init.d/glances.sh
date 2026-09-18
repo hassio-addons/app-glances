@@ -4,6 +4,7 @@
 # Home Assistant Community App: Glances
 # Configures Glances
 # ==============================================================================
+declare host
 declare protocol
 bashio::require.unprotected
 
@@ -35,6 +36,7 @@ if bashio::config.true 'influxdb.enabled'; then
     if bashio::config.true 'influxdb.ssl'; then
         protocol='https'
     fi
+    host="$(bashio::config 'influxdb.host')"
 
     # Modify the configuration
     if bashio::config.equals 'influxdb.version' '1'; then
@@ -61,13 +63,27 @@ if bashio::config.true 'influxdb.enabled'; then
             echo "token=$(bashio::config 'influxdb.token')"
             echo "interval=$(bashio::config 'influxdb.interval')"
         } >> /etc/glances.conf
+    elif bashio::config.equals 'influxdb.version' '3'; then
+        bashio::config.require "influxdb.database"
+        bashio::config.require "influxdb.token"
+
+        # The InfluxDB 3 exporter only passes the host to its client, which
+        # then assumes HTTPS on port 443. Make both part of the host instead.
+        host="${protocol}://${host}:$(bashio::config 'influxdb.port')"
+        {
+            echo "[influxdb3]"
+            echo "org=$(bashio::config 'influxdb.org' 'default')"
+            echo "database=$(bashio::config 'influxdb.database')"
+            echo "token=$(bashio::config 'influxdb.token')"
+            echo "interval=$(bashio::config 'influxdb.interval')"
+        } >> /etc/glances.conf
     else
-        bashio::exit.nok "Unsupported InfluxDB version: must be 1 or 2"
+        bashio::exit.nok "Unsupported InfluxDB version: must be 1, 2 or 3"
     fi
 
     {
         echo "protocol=${protocol}"
-        echo "host=$(bashio::config 'influxdb.host')"
+        echo "host=${host}"
         echo "port=$(bashio::config 'influxdb.port')"
     } >> /etc/glances.conf
 fi
