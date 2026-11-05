@@ -7,7 +7,7 @@ influxdb-client==1.50.0
 # later reject, breaking every write. Keep it below 0.17.0 until Glances 4.5.7.
 # https://github.com/nicolargo/glances/issues/3734
 influxdb3-python==0.16.0
-paho-mqtt==2.1.0
+paho-mqtt==2.2.0
 psutil==7.2.2
 py-cpuinfo==9.0.0
 requests==2.34.2
